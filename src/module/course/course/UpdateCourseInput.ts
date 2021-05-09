@@ -5,16 +5,24 @@ import { Level } from '../../../entity/Course';
 export class UpdateCoruseInput {
   @Field()
   courseId: string;
-  
-  @Field()
+
+  @Field({
+    nullable: true,
+  })
   title?: string;
 
-  @Field()
+  @Field({
+    nullable: true,
+  })
   image?: string;
   // duration of the course by minutes
-  @Field()
+  @Field({
+    nullable: true,
+  })
   duration?: number;
 
-  @Field()
+  @Field({
+    nullable: true,
+  })
   level?: Level;
 }

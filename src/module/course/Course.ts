@@ -105,9 +105,9 @@ export class CourseResolver {
     @Arg('data') { courseId, duration, title, image, level }: UpdateCoruseInput,
     @Ctx() ctx: MainContext
   ) {
-    const user = verifyToken(ctx.req);
+    const user = await verifyToken(ctx.req);
 
-    const course = await Course.find({
+    const course = await Course.findOne({
       relations: ['instructor'],
       where: {
         id: courseId,
@@ -115,5 +115,57 @@ export class CourseResolver {
     });
 
     if (!course) throw new Error('Coures not found');
+    // check if the user is the owner or not
+    if (course.instructor.id !== user.id)
+      throw new Error(
+        'Unauthorized to update this corues, only the owner can update '
+      );
+    //  update coures info
+    if (title) course.title = title;
+    if (duration) course.duration = duration;
+    if (image) course.image = image;
+    if (level) {
+      if (!Level[level])
+        throw new Error(
+          `Please select valid level (${Level.BEGINNER}, ${Level.INTERMEDIATE}, ${Level.ADDVANCED})`
+        );
+      course.level = level;
+    }
+
+    course.save();
+
+    return course;
+  }
+
+  @Query(() => Course)
+  async getCourse(
+    @Arg('id') id: string,
+    @Ctx() ctx: MainContext
+  ): Promise<Course> {
+    type QueryType = {
+      id: string;
+      status?: Status;
+    };
+
+    let query: QueryType = {
+      id,
+      status: Status.ACCEPTED,
+    };
+    // check for the token in the req header
+    if (ctx.req.headers.authorization) {
+      const user = await verifyToken(ctx.req);
+      if (user.role === UserRole.ADMIN) {
+        query = {
+          id,
+        };
+      }
+    }
+    const course = await Course.findOne({
+      relations: ['instructor'],
+      where: query,
+    });
+    if (!course) throw new Error('Coruse not Found ');
+
+    return course;
   }
 }
