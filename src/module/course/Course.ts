@@ -61,15 +61,27 @@ export class CourseResolver {
 
   // get all couses that only accepted by the admin
   @Query(() => [Course])
-  async getCourses(): Promise<Course[]> {
-    const couses = await Course.find({
-      where: {
-        status: Status.ACCEPTED,
-      },
+  async getCourses(@Ctx() ctx: MainContext): Promise<Course[]> {
+    type QueryType = {
+      status?: Status;
+    };
+    // get all courses if the user not an admin else get all coruse for the admin
+    let query: QueryType = {
+      status: Status.ACCEPTED,
+    };
+    if (ctx.req.headers.authorization) {
+      const user = await verifyToken(ctx.req);
+      if (user.role === UserRole.ADMIN) {
+        query = {};
+      }
+    }
+
+    const courses = await Course.find({
+      where: query,
       relations: ['instructor'],
     });
 
-    return couses;
+    return courses;
   }
   // accept the course
   @Mutation(() => Boolean)
